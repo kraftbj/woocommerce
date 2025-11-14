@@ -11,10 +11,7 @@ import deepmerge from 'deepmerge';
  */
 import { EmailTheme, EmailBuiltStyles, storeName } from '../store';
 import { useUserTheme } from './use-user-theme';
-import {
-	useGlobalStylesOutputWithConfig,
-	areExternalStylesSupported,
-} from '../private-apis';
+import { useGlobalStylesOutputWithConfig } from './use-global-styles-output';
 import { unwrapCompressedPresetStyleVariable } from '../style-variables';
 
 // Empty array to avoid re-rendering the component when the array is empty
@@ -62,7 +59,11 @@ export function useEmailCss() {
 	if ( layout && deviceType !== 'Mobile' ) {
 		rootContainerStyles = `display:flow-root; width:${ layout?.contentSize }; margin: 0 auto;box-sizing: border-box;max-width: 100%;`;
 	}
-	const padding = mergedConfig.styles?.spacing?.padding;
+	const padding = mergedConfig.styles?.spacing?.padding as {
+		left: string;
+		right: string;
+	};
+
 	if ( padding ) {
 		rootContainerStyles += `padding-left:${ unwrapCompressedPresetStyleVariable(
 			padding.left
@@ -73,9 +74,6 @@ export function useEmailCss() {
 	}
 
 	const finalStyles = useMemo( () => {
-		if ( ! areExternalStylesSupported ) {
-			return EMPTY_ARRAY;
-		}
 		return [
 			...( ( styles as EmailBuiltStyles[] ) ?? [] ),
 			{
