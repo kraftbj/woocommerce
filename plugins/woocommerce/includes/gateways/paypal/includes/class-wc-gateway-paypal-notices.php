@@ -22,14 +22,14 @@ class WC_Gateway_Paypal_Notices {
 	 *
 	 * @var string
 	 */
-	const PAYPAL_MIGRATION_NOTICE = 'paypal_migration_completed';
+	private const PAYPAL_MIGRATION_NOTICE = 'paypal_migration_completed';
 
 	/**
 	 * The name of the notice for PayPal account restriction.
 	 *
 	 * @var string
 	 */
-	const PAYPAL_ACCOUNT_RESTRICTED_NOTICE = 'paypal_account_restricted';
+	private const PAYPAL_ACCOUNT_RESTRICTED_NOTICE = 'paypal_account_restricted';
 
 	/**
 	 * The name of the notice for PayPal unsupported currency.
@@ -60,6 +60,9 @@ class WC_Gateway_Paypal_Notices {
 		// This bypasses the suppress_admin_notices() function which removes all admin_notices hooks on the payments page.
 		// This is a workaround to avoid the notice being suppressed by the suppress_admin_notices() function.
 		add_action( 'admin_head', array( $this, 'add_paypal_notices_on_payments_settings_page' ) );
+
+		// Listen for PayPal order responses to manage account restriction notices.
+		add_action( 'woocommerce_paypal_standard_order_created_response', array( $this, 'manage_account_restriction_status' ), 10, 3 );
 	}
 
 	/**
@@ -90,7 +93,13 @@ class WC_Gateway_Paypal_Notices {
 	 */
 	public function add_paypal_notices_on_payments_settings_page() {
 		global $current_tab, $current_section;
-		$is_payments_settings_page = 'woocommerce_page_wc-settings' === get_current_screen()->id && 'checkout' === $current_tab && empty( $current_section );
+
+		$screen = get_current_screen();
+		if ( ! $screen ) {
+			return;
+		}
+
+		$is_payments_settings_page = 'woocommerce_page_wc-settings' === $screen->id && 'checkout' === $current_tab && empty( $current_section );
 
 		// Only add the notice from this callback on the payments settings page.
 		if ( ! $is_payments_settings_page ) {
@@ -201,7 +210,7 @@ class WC_Gateway_Paypal_Notices {
 	 * @param string $notice_name The name of the notice.
 	 * @return string
 	 */
-	private function get_dismiss_url( $notice_name ) {
+	private function get_dismiss_url( string $notice_name ): string {
 		return wp_nonce_url(
 			add_query_arg( 'wc-hide-notice', $notice_name ),
 			'woocommerce_hide_notices_nonce',
@@ -215,8 +224,8 @@ class WC_Gateway_Paypal_Notices {
 	 * @param string $notice_name The name of the notice.
 	 * @return bool
 	 */
-	private function is_notice_dismissed( $notice_name ) {
-		return get_user_meta( get_current_user_id(), 'dismissed_' . $notice_name . '_notice', true );
+	private function is_notice_dismissed( string $notice_name ): bool {
+		return (bool) get_user_meta( get_current_user_id(), 'dismissed_' . $notice_name . '_notice', true );
 	}
 
 	/**
@@ -224,7 +233,7 @@ class WC_Gateway_Paypal_Notices {
 	 *
 	 * @return bool
 	 */
-	private function has_account_restriction_flag() {
+	private function has_account_restriction_flag(): bool {
 		return 'yes' === $this->gateway->get_option( 'paypal_account_restricted', 'no' );
 	}
 
@@ -233,7 +242,7 @@ class WC_Gateway_Paypal_Notices {
 	 *
 	 * @return void
 	 */
-	public static function set_account_restriction_flag() {
+	public static function set_account_restriction_flag(): void {
 		$gateway = WC_Gateway_Paypal::get_instance();
 		if ( $gateway && 'no' === $gateway->get_option( 'paypal_account_restricted', 'no' ) ) {
 			$gateway->update_option( 'paypal_account_restricted', 'yes' );
@@ -245,10 +254,52 @@ class WC_Gateway_Paypal_Notices {
 	 *
 	 * @return void
 	 */
-	public static function clear_account_restriction_flag() {
+	public static function clear_account_restriction_flag(): void {
 		$gateway = WC_Gateway_Paypal::get_instance();
 		if ( $gateway && 'yes' === $gateway->get_option( 'paypal_account_restricted', 'no' ) ) {
 			$gateway->update_option( 'paypal_account_restricted', 'no' );
+		}
+	}
+
+	/**
+	 * Handle PayPal order response to manage account restriction notices.
+	 *
+	 * This method is called via the 'woocommerce_paypal_standard_order_created_response' hook
+	 * and manages the account restriction flag based on PayPal API responses.
+	 *
+	 * Extensions can disable this feature using the filter:
+	 * add_filter( 'woocommerce_paypal_account_restriction_notices_enabled', '__return_false' );
+	 *
+	 * @param int        $http_code     The HTTP status code from the PayPal API response.
+	 * @param array|null $response_data The decoded response data from the PayPal API, or null if decoding failed.
+	 * @return void
+	 */
+	public function manage_account_restriction_status( int $http_code, $response_data ): void {
+		/**
+		 * Filters whether account restriction notices should be enabled.
+		 *
+		 * This filter allows extensions to opt out of the account restriction notice functionality.
+		 *
+		 * @since 10.4.0
+		 *
+		 * @param bool $enabled Whether account restriction notices are enabled. Default true.
+		 */
+		if ( ! apply_filters( 'woocommerce_paypal_account_restriction_notices_enabled', true ) ) {
+			return;
+		}
+
+		// Clear the restriction flag on successful responses.
+		if ( in_array( $http_code, array( 200, 201 ), true ) ) {
+			self::clear_account_restriction_flag();
+			return;
+		}
+
+		// Set the restriction flag for account-related errors.
+		if ( 422 === $http_code && is_array( $response_data ) ) {
+			$issue = isset( $response_data['details'][0]['issue'] ) ? $response_data['details'][0]['issue'] : null;
+			if ( in_array( $issue, array( 'PAYEE_ACCOUNT_LOCKED_OR_CLOSED', 'PAYEE_ACCOUNT_RESTRICTED' ), true ) ) {
+				self::set_account_restriction_flag();
+			}
 		}
 	}
 }
