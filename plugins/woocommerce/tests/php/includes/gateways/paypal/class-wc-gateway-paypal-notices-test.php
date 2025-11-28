@@ -8,7 +8,7 @@
 declare(strict_types=1);
 
 require_once WC_ABSPATH . 'includes/gateways/paypal/includes/class-wc-gateway-paypal-notices.php';
- 
+
 /**
  * Class WC_Gateway_Paypal_Notices_Test.
  */
@@ -49,7 +49,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		parent::setUp();
 
 		// Create test users.
-		$this->admin_user_id = $this->factory->user->create(
+		$this->admin_user_id        = $this->factory->user->create(
 			array(
 				'role' => 'administrator',
 			)
@@ -59,7 +59,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 				'role' => 'shop_manager',
 			)
 		);
-		$this->customer_user_id = $this->factory->user->create(
+		$this->customer_user_id     = $this->factory->user->create(
 			array(
 				'role' => 'customer',
 			)
@@ -121,16 +121,16 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	 */
 	public function user_capability_data_provider() {
 		return array(
-			'admin can see notices'     => array(
+			'admin can see notices'        => array(
 				'user_role'      => 'administrator',
 				'should_display' => true,
 			),
-			'shop_manager can see notices'      => array(
-				'user_role'        => 'shop_manager',
+			'shop_manager can see notices' => array(
+				'user_role'      => 'shop_manager',
 				'should_display' => true,
 			),
-			'customer cannot see notices'       => array(
-				'user_role'        => 'customer',
+			'customer cannot see notices'  => array(
+				'user_role'      => 'customer',
 				'should_display' => false,
 			),
 		);
@@ -140,14 +140,14 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	 * Test that notices respect user capabilities.
 	 *
 	 * @dataProvider user_capability_data_provider
-	 * @param int  $user_role The role of the user.
+	 * @param string $user_role The role of the user.
 	 * @param bool $should_display Whether the notice should display.
 	 */
-	public function test_notices_respect_user_capabilities( $user_role, $should_display ) {
+	public function test_notices_respect_user_capabilities( string $user_role, bool $should_display ) {
 		$user_id_map = array(
 			'administrator' => $this->admin_user_id,
-			'shop_manager' => $this->shop_manager_user_id,
-			'customer' => $this->customer_user_id,
+			'shop_manager'  => $this->shop_manager_user_id,
+			'customer'      => $this->customer_user_id,
 		);
 		wp_set_current_user( $user_id_map[ $user_role ] );
 
@@ -197,7 +197,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	/**
 	 * Test that account restricted notice is displayed when flag is set.
 	 */
-	public function test_account_restricted_notice_displayed_when_flag_set() {		
+	public function test_account_restricted_notice_displayed_when_flag_set() {
 		$this->gateway->update_option( 'paypal_account_restricted', 'yes' );
 		$this->mock_gateway_available();
 
@@ -230,7 +230,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	/**
 	 * Test that account restricted notice is not displayed when dismissed.
 	 */
-	public function test_account_restricted_notice_not_displayed_when_dismissed() {		
+	public function test_account_restricted_notice_not_displayed_when_dismissed() {
 		// Create mock with account_restricted set to 'yes'.
 		$this->create_mock_gateway( 'yes' );
 		update_user_meta( $this->admin_user_id, 'dismissed_paypal_account_restricted_notice', true );
@@ -251,20 +251,20 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	 */
 	public function currency_support_data_provider() {
 		return array(
-			'USD is supported'  => array(
-				'currency'      => 'USD',
+			'USD is supported'                    => array(
+				'currency'       => 'USD',
 				'should_display' => false,
 			),
-			'EUR is supported'  => array(
-				'currency'      => 'EUR',
+			'EUR is supported'                    => array(
+				'currency'       => 'EUR',
 				'should_display' => false,
 			),
-			'INR is not supported' => array(
-				'currency'      => 'INR',
+			'INR is not supported'                => array(
+				'currency'       => 'INR',
 				'should_display' => true,
 			),
 			'Invalid currency code not supported' => array(
-				'currency'      => 'XYZ',
+				'currency'       => 'XYZ',
 				'should_display' => true,
 			),
 		);
@@ -328,15 +328,15 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'get_option', 'update_option' ) )
 			->getMock();
-		
+
 		$mock_gateway->method( 'get_option' )
 			->with( 'paypal_account_restricted', 'no' )
 			->willReturn( 'no' );
-		
+
 		$mock_gateway->expects( $this->once() )
 			->method( 'update_option' )
 			->with( 'paypal_account_restricted', 'yes' );
-		
+
 		WC_Gateway_Paypal::set_instance( $mock_gateway );
 
 		WC_Gateway_Paypal_Notices::set_account_restriction_flag();
@@ -350,15 +350,15 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'get_option', 'update_option' ) )
 			->getMock();
-		
+
 		$mock_gateway->method( 'get_option' )
 			->with( 'paypal_account_restricted', 'no' )
 			->willReturn( 'yes' );
-		
+
 		// Should NOT call update_option since it's already set.
 		$mock_gateway->expects( $this->never() )
 			->method( 'update_option' );
-		
+
 		WC_Gateway_Paypal::set_instance( $mock_gateway );
 
 		WC_Gateway_Paypal_Notices::set_account_restriction_flag();
@@ -372,15 +372,15 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'get_option', 'update_option' ) )
 			->getMock();
-		
+
 		$mock_gateway->method( 'get_option' )
 			->with( 'paypal_account_restricted', 'no' )
 			->willReturn( 'yes' );
-		
+
 		$mock_gateway->expects( $this->once() )
 			->method( 'update_option' )
 			->with( 'paypal_account_restricted', 'no' );
-		
+
 		WC_Gateway_Paypal::set_instance( $mock_gateway );
 
 		WC_Gateway_Paypal_Notices::clear_account_restriction_flag();
@@ -394,15 +394,15 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'get_option', 'update_option' ) )
 			->getMock();
-		
+
 		$mock_gateway->method( 'get_option' )
 			->with( 'paypal_account_restricted', 'no' )
 			->willReturn( 'no' );
-		
+
 		// Should NOT call update_option since it's already cleared.
 		$mock_gateway->expects( $this->never() )
 			->method( 'update_option' );
-		
+
 		WC_Gateway_Paypal::set_instance( $mock_gateway );
 
 		WC_Gateway_Paypal_Notices::clear_account_restriction_flag();
@@ -451,7 +451,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		// Mock the screen.
 		set_current_screen( 'woocommerce_page_wc-settings' );
 		global $current_tab, $current_section;
-		$current_tab = 'checkout';
+		$current_tab     = 'checkout';
 		$current_section = '';
 
 		$notices = new WC_Gateway_Paypal_Notices();
@@ -473,7 +473,7 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		// Mock the screen with wrong tab.
 		set_current_screen( 'woocommerce_page_wc-settings' );
 		global $current_tab, $current_section;
-		$current_tab = 'general';
+		$current_tab     = 'general';
 		$current_section = '';
 
 		$notices = new WC_Gateway_Paypal_Notices();
@@ -492,7 +492,6 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$this->gateway->update_option( 'paypal_account_restricted', 'yes' );
 		$this->mock_gateway_available();
 
-		
 		$store_currency = get_option( 'woocommerce_currency' );
 		update_option( 'woocommerce_currency', 'TRY' );
 
@@ -548,12 +547,12 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'should_use_orders_v2' ) )
 			->getMock();
-		
+
 		$mock_gateway->method( 'should_use_orders_v2' )->willReturn( true );
 
 		// Inject the mock gateway as the singleton instance.
 		WC_Gateway_Paypal::set_instance( $mock_gateway );
-		
+
 		return $mock_gateway;
 	}
 }
