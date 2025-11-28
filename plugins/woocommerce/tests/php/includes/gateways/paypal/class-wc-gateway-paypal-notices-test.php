@@ -542,10 +542,9 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 	/**
 	 * Create a mock gateway instance.
 	 *
-	 * @param string $account_restricted_value The value for paypal_account_restricted option (default: 'no').
 	 * @return WC_Gateway_Paypal|\PHPUnit\Framework\MockObject\MockObject
 	 */
-	private function create_mock_gateway( $account_restricted_value = 'no' ) {
+	private function create_mock_gateway() {
 		$mock_gateway = $this->getMockBuilder( WC_Gateway_Paypal::class )
 			->onlyMethods( array( 'should_use_orders_v2' ) )
 			->getMock();
@@ -558,4 +557,3 @@ class WC_Gateway_Paypal_Notices_Test extends \WC_Unit_Test_Case {
 		return $mock_gateway;
 	}
 }
-
