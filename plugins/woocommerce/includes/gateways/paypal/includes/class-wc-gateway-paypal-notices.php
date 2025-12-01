@@ -220,6 +220,11 @@ class WC_Gateway_Paypal_Notices {
 
 	/**
 	 * Check if the notice has been dismissed.
+	 * 
+	 * User meta keys used for dismissal tracking:
+	 * - dismissed_paypal_migration_completed_notice
+	 * - dismissed_paypal_account_restricted_notice
+	 * - dismissed_paypal_unsupported_currency_notice
 	 *
 	 * @param string $notice_name The name of the notice.
 	 * @return bool
