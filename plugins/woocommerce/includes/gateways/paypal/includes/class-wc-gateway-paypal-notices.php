@@ -180,7 +180,7 @@ class WC_Gateway_Paypal_Notices {
 		$currency = get_woocommerce_currency();
 
 		// Skip if the currency is supported by PayPal.
-		if ( in_array( $currency, WC_Gateway_Paypal_Constants::SUPPORTED_CURRENCIES, true ) ) {
+		if ( $this->gateway->is_valid_for_use() ) {
 			return;
 		}
 
