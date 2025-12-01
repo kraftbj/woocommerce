@@ -31,12 +31,13 @@ interface PlaceOrderButtonProps {
 	CustomButtonComponent?: CustomPlaceOrderButtonComponent;
 }
 
+const DefaultCustomButton = ( { children } ) => children;
 const PlaceOrderButton = ( {
 	label,
 	fullWidth = false,
 	showPrice = false,
 	priceSeparator = '·',
-	CustomButtonComponent,
+	CustomButtonComponent = DefaultCustomButton,
 }: PlaceOrderButtonProps ): JSX.Element => {
 	const {
 		onSubmit,
@@ -51,38 +52,10 @@ const PlaceOrderButton = ( {
 	const { cartTotals, cartIsLoading } = useStoreCart();
 	const totalsCurrency = getCurrencyFromPriceResponse( cartTotals );
 
-	// when provided, the `CustomButtonComponent` should take precedence over the default button.
-	if ( CustomButtonComponent ) {
-		return (
-			<CustomButtonComponent
-				waitingForProcessing={ waitingForProcessing }
-				waitingForRedirect={ waitingForRedirect }
-				disabled={
-					isCalculating ||
-					isDisabled ||
-					waitingForProcessing ||
-					waitingForRedirect ||
-					cartIsLoading
-				}
-				{ ...paymentMethodInterface }
-			/>
-		);
-	}
-
 	return (
-		<Button
-			className={ clsx(
-				'wc-block-components-checkout-place-order-button',
-				{
-					'wc-block-components-checkout-place-order-button--full-width':
-						fullWidth,
-				},
-				{
-					'wc-block-components-checkout-place-order-button--loading':
-						waitingForProcessing || waitingForRedirect,
-				}
-			) }
-			onClick={ onSubmit }
+		<CustomButtonComponent
+			waitingForProcessing={ waitingForProcessing }
+			waitingForRedirect={ waitingForRedirect }
 			disabled={
 				isCalculating ||
 				isDisabled ||
@@ -90,42 +63,65 @@ const PlaceOrderButton = ( {
 				waitingForRedirect ||
 				cartIsLoading
 			}
+			{ ...paymentMethodInterface }
 		>
-			{ waitingForProcessing && <Spinner /> }
-			{ waitingForRedirect && (
-				<Icon
-					className="wc-block-components-checkout-place-order-button__icon"
-					icon={ check }
-				/>
-			) }
-			<div
-				className={
-					'wc-block-components-checkout-place-order-button__text'
+			<Button
+				className={ clsx(
+					'wc-block-components-checkout-place-order-button',
+					{
+						'wc-block-components-checkout-place-order-button--full-width':
+							fullWidth,
+					},
+					{
+						'wc-block-components-checkout-place-order-button--loading':
+							waitingForProcessing || waitingForRedirect,
+					}
+				) }
+				onClick={ onSubmit }
+				disabled={
+					isCalculating ||
+					isDisabled ||
+					waitingForProcessing ||
+					waitingForRedirect ||
+					cartIsLoading
 				}
 			>
-				{ label }
-				{ showPrice && (
-					<>
-						<style>
-							{ `.wp-block-woocommerce-checkout-actions-block {
+				{ waitingForProcessing && <Spinner /> }
+				{ waitingForRedirect && (
+					<Icon
+						className="wc-block-components-checkout-place-order-button__icon"
+						icon={ check }
+					/>
+				) }
+				<div
+					className={
+						'wc-block-components-checkout-place-order-button__text'
+					}
+				>
+					{ label }
+					{ showPrice && (
+						<>
+							<style>
+								{ `.wp-block-woocommerce-checkout-actions-block {
 							.wc-block-components-checkout-place-order-button__separator {
 								&::after {
 									content: "${ priceSeparator }";
 								}
 							}
 						}` }
-						</style>
-						<div className="wc-block-components-checkout-place-order-button__separator" />
-						<div className="wc-block-components-checkout-place-order-button__price">
-							<FormattedMonetaryAmount
-								value={ cartTotals.total_price }
-								currency={ totalsCurrency }
-							/>
-						</div>
-					</>
-				) }
-			</div>
-		</Button>
+							</style>
+							<div className="wc-block-components-checkout-place-order-button__separator" />
+							<div className="wc-block-components-checkout-place-order-button__price">
+								<FormattedMonetaryAmount
+									value={ cartTotals.total_price }
+									currency={ totalsCurrency }
+								/>
+							</div>
+						</>
+					) }
+				</div>
+			</Button>
+		</CustomButtonComponent>
 	);
 };
 
